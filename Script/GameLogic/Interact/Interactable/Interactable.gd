@@ -8,18 +8,26 @@ class_name Interactable
 	Passes the node that requested the interact in the signal.
 """
 
+#These are all the possible criteria we can have.
+const IS_PLAYER : int = 0
+
 signal interacted_by(interactor_ray_cast)
 
 #This is what is displayed when an interactor can interact with me.
 export var display_info : String = "Interactable"
 #This string is displayed in the text of the InteractsMenu button.
 export var title : String = "Title"
+#Determines what state the Interactor has to be to interact with me.
+export var criteria : PoolIntArray = PoolIntArray([0])
 
 var owning_entity: AEntity = null
 
 func _ready() -> void :
 	collision_layer = 32768
 	collision_mask = 0
+
+func get_criteria() -> PoolIntArray :
+	return criteria
 
 func get_info() -> String :
 	#Show what the display info should be for interacting with me.

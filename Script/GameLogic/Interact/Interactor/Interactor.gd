@@ -19,6 +19,16 @@ signal interacted_with(interactable)
 var interactables : Array = []
 #This is how I will not spam a signal when I have potential interacts.
 var previous_collider : Area = null
+#What interactable criteria I meet.
+var satisfies : PoolIntArray = PoolIntArray([0])
+
+func _satisfies_criteria(criteria : PoolIntArray) -> bool :
+	for satiate in satisfies :
+		for criterion in criteria :
+			if satiate == criterion :
+				return true
+	
+	return false
 
 func _ready():
 	collision_layer = 0
@@ -28,14 +38,20 @@ func _ready():
 	connect("area_entered", self, "_interactable_entered")
 
 func _interactable_left(interactable_area : Area) -> void :
-	emit_signal("interactable_left_area", interactable_area)
+	if _satisfies_criteria(interactable_area.get_criteria()) :
+		emit_signal("interactable_left_area", interactable_area)
 
 #Determine what Interactables I am touching.
 func _physics_process(_delta : float) -> void:
+	interactables.clear()
+	for interactable in get_overlapping_areas() :
+		if _satisfies_criteria(interactable.get_criteria()) :
+			interactables.append(interactable)
+	
 	#Get the interactable I am colliding with.
 	var closest_body : Area = null
 	var closest_body_distance : float = 99999999999.0
-	interactables = get_overlapping_areas()
+	
 	for body in interactables :
 		var position_from_me : float
 		position_from_me = (global_transform.origin - body.global_transform.origin).length()
@@ -67,8 +83,9 @@ func get_potential_interacts() -> Array :
 #Interact with the given interactable.
 func interact(interactable) -> void :
 	assert(interactables.empty() == false)
-	interactable.interact_with(owning_entity)
-	emit_signal("interacted_with", interactable.owning_entity)
+	if _satisfies_criteria(interactable.criteria) :
+		interactable.interact_with(owning_entity)
+		emit_signal("interacted_with", interactable.owning_entity)
 
 #Interact with the closest potential interactable. Can be called when no interactables are present.
 func interact_with_closest() -> void :
@@ -81,4 +98,5 @@ func interact_with_closest() -> void :
 
 #An interactable has entered my area.
 func _interactable_entered(interactable_node) -> void :
-	emit_signal("interactable_entered_area", interactable_node)
+	if _satisfies_criteria(interactable_node.get_criteria()) :
+		emit_signal("interactable_entered_area", interactable_node)
